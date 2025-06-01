@@ -1,0 +1,272 @@
+{
+    "tables": [
+        {
+            "name": "customers",
+            "schema": "sales",
+            "description": "Customer information table",
+            "table_type": "PostgreSQL",
+            "autosys_jobs": [
+                "JOB_LOAD_CUSTOMERS",
+                "JOB_VALIDATE_CUSTOMERS"
+            ],
+            "columns": [
+                {
+                    "name": "customer_id",
+                    "data_type": "INT",
+                    "description": "Primary key",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "customer_name",
+                    "data_type": "VARCHAR",
+                    "description": "Full name",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "email",
+                    "data_type": "VARCHAR",
+                    "description": "Email address",
+                    "source_columns": [],
+                    "quality_score": 20
+                }
+            ],
+            "quality_score": 36,
+            "last_updated": "2025-06-01 21:24:20"
+        },
+        {
+            "name": "orders",
+            "schema": "sales",
+            "description": "Order details table",
+            "table_type": "MySQL",
+            "autosys_jobs": [
+                "JOB_LOAD_ORDERS",
+                "JOB_PROCESS_ORDERS"
+            ],
+            "columns": [
+                {
+                    "name": "order_id",
+                    "data_type": "INT",
+                    "description": "Primary key",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "customer_id",
+                    "data_type": "INT",
+                    "description": "Foreign key to customers",
+                    "source_columns": [
+                        "customers.customer_id"
+                    ],
+                    "quality_score": 30
+                },
+                {
+                    "name": "product_id",
+                    "data_type": "INT",
+                    "description": "Foreign key to products",
+                    "source_columns": [
+                        "products.product_id"
+                    ],
+                    "quality_score": 30
+                },
+                {
+                    "name": "order_date",
+                    "data_type": "DATE",
+                    "description": "Date of purchase",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "amount",
+                    "data_type": "DECIMAL",
+                    "description": "Purchase amount",
+                    "source_columns": [],
+                    "quality_score": 20
+                }
+            ],
+            "quality_score": 39,
+            "last_updated": "2025-06-01 21:24:20"
+        },
+        {
+            "name": "products",
+            "schema": "inventory",
+            "description": "Product information table",
+            "table_type": "Oracle",
+            "autosys_jobs": [
+                "JOB_UPDATE_PRODUCTS"
+            ],
+            "columns": [
+                {
+                    "name": "product_id",
+                    "data_type": "INT",
+                    "description": "Primary key",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "product_name",
+                    "data_type": "VARCHAR",
+                    "description": "Product name",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "category",
+                    "data_type": "VARCHAR",
+                    "description": "Product category",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "price",
+                    "data_type": "DECIMAL",
+                    "description": "Unit price",
+                    "source_columns": [],
+                    "quality_score": 20
+                }
+            ],
+            "quality_score": 36,
+            "last_updated": "2025-06-01 21:24:20"
+        },
+        {
+            "name": "sales_summary",
+            "schema": "analytics",
+            "description": "Aggregated sales data",
+            "table_type": "Snowflake",
+            "autosys_jobs": [
+                "JOB_GENERATE_SALES_SUMMARY",
+                "JOB_EXPORT_ANALYTICS"
+            ],
+            "columns": [
+                {
+                    "name": "date",
+                    "data_type": "DATE",
+                    "description": "Sales date",
+                    "source_columns": [],
+                    "quality_score": 20
+                },
+                {
+                    "name": "product_id",
+                    "data_type": "INT",
+                    "description": "Product identifier",
+                    "source_columns": [
+                        "products.product_id"
+                    ],
+                    "quality_score": 30
+                },
+                {
+                    "name": "total_sales",
+                    "data_type": "DECIMAL",
+                    "description": "Total sales amount",
+                    "source_columns": [
+                        "orders.amount"
+                    ],
+                    "quality_score": 30
+                },
+                {
+                    "name": "units_sold",
+                    "data_type": "INT",
+                    "description": "Number of units sold",
+                    "source_columns": [
+                        "orders.product_id"
+                    ],
+                    "quality_score": 30
+                }
+            ],
+            "quality_score": 42,
+            "last_updated": "2025-06-01 21:24:20"
+        }
+    ],
+    "transformations": [
+        {
+            "name": "order_processing",
+            "transformation_type": "SQL",
+            "input_tables": [
+                "customers",
+                "products"
+            ],
+            "output_tables": [
+                "orders"
+            ],
+            "logic": "INSERT INTO orders (customer_id, product_id, order_date, amount)\nSELECT c.customer_id, p.product_id, CURRENT_DATE, p.price\nFROM customers c, products p\nWHERE c.customer_id = ?",
+            "description": "Process new orders",
+            "column_mappings": [
+                {
+                    "source_table": "customers",
+                    "source_column": "customer_id",
+                    "target_table": "orders",
+                    "target_column": "customer_id",
+                    "transformation_rule": "Direct copy"
+                },
+                {
+                    "source_table": "products",
+                    "source_column": "product_id",
+                    "target_table": "orders",
+                    "target_column": "product_id",
+                    "transformation_rule": "Direct copy"
+                },
+                {
+                    "source_table": "products",
+                    "source_column": "price",
+                    "target_table": "orders",
+                    "target_column": "amount",
+                    "transformation_rule": "Direct copy"
+                }
+            ],
+            "autosys_jobs": [
+                "JOB_ORDER_ETL",
+                "JOB_ORDER_VALIDATION"
+            ],
+            "created_date": "2025-06-01 21:24:20"
+        },
+        {
+            "name": "sales_aggregation",
+            "transformation_type": "SQL",
+            "input_tables": [
+                "orders",
+                "products"
+            ],
+            "output_tables": [
+                "sales_summary"
+            ],
+            "logic": "INSERT INTO sales_summary (date, product_id, total_sales, units_sold)\nSELECT DATE(o.order_date), o.product_id, SUM(o.amount), COUNT(*)\nFROM orders o\nJOIN products p ON o.product_id = p.product_id\nGROUP BY DATE(o.order_date), o.product_id",
+            "description": "Aggregate sales data daily",
+            "column_mappings": [
+                {
+                    "source_table": "orders",
+                    "source_column": "order_date",
+                    "target_table": "sales_summary",
+                    "target_column": "date",
+                    "transformation_rule": "Convert to date"
+                },
+                {
+                    "source_table": "orders",
+                    "source_column": "product_id",
+                    "target_table": "sales_summary",
+                    "target_column": "product_id",
+                    "transformation_rule": "Direct copy"
+                },
+                {
+                    "source_table": "orders",
+                    "source_column": "amount",
+                    "target_table": "sales_summary",
+                    "target_column": "total_sales",
+                    "transformation_rule": "Sum aggregation"
+                },
+                {
+                    "source_table": "orders",
+                    "source_column": "product_id",
+                    "target_table": "sales_summary",
+                    "target_column": "units_sold",
+                    "transformation_rule": "Count aggregation"
+                }
+            ],
+            "autosys_jobs": [
+                "JOB_DAILY_AGGREGATION",
+                "JOB_SALES_SUMMARY"
+            ],
+            "created_date": "2025-06-01 21:24:20"
+        }
+    ]
+}
